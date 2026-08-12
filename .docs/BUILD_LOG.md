@@ -2,7 +2,7 @@
 
 Internal companion to the public learning guide (published as a Claude Artifact, linked from chat each module). This file is the one that stays with the repo: a plain-words explanation of every decision, a running log of what was actually built and why, and an interview question bank that grows as the project grows. Read `## How this file works` once, then jump to whatever section matches where the project currently is.
 
-Status: **Modules 1–2 complete. Module 3 (Interview Prep) queued next.**
+Status: **Modules 1–3 complete. Module 4 (Implementation) starting next — roadmap first, then code.**
 
 ---
 
@@ -90,9 +90,44 @@ A: LangSmith tracing — every node call, tool call, and state transition for a 
 
 *(Grows further once Module 3 does the full system-design and trade-off grind.)*
 
-## Module 03 — Interview Prep (full grind)
+## Module 03 — Interview Prep (full grind) — recap
 
-*Queued. Will cover: problem framing, tech-stack justification (LangChain/LangGraph vs. CrewAI vs. AutoGen vs. a hand-rolled loop), cost/latency/quality trade-offs, scaling and production concerns, evaluation of agent output quality, hallucination handling, security, and system-design-style questions.*
+**The four-beat narrative** (for "tell me about a project you're proud of"): Problem — a single prompt/agent doing search, judgment, synthesis, and writing at once fails in ways that are hard to localize. Approach — split into four specialists behind a Supervisor, orchestrated with LangGraph for run-time routing, on Ollama for a free, self-contained stack. Outcome — a working system where every decision traces to a stated trade-off. What I'd change at scale — swap the search tool and LLM (both one-line changes by design) and turn on observability.
+
+**Tech stack vs. alternatives:** LangGraph was chosen over CrewAI/AutoGen/a hand-rolled loop specifically because the core challenge here — a Supervisor making run-time routing decisions over shared, typed state — is exactly the problem `StateGraph` exists to solve. CrewAI's higher-level "crew" abstraction is faster to prototype but weaker at expressing conditional, cyclical routing. AutoGen's conversational agent-to-agent chat loop suits open-ended dialogue better than a fixed pipeline of typed hand-offs. Hand-rolling avoids dependency risk but means re-implementing state merging and routing — effort better spent on the agents themselves.
+
+**Local vs. hosted LLM, quantified honestly:** Ollama wins on cost (free after hardware) and privacy (nothing leaves the machine); hosted APIs win on tool-calling reliability, latency consistency, and context/reasoning depth. The decision framework: local when optimizing for cost/privacy and retry logic can absorb weaker tool-calling (this project); hosted the moment reliability or reasoning quality becomes the bottleneck. The one-line swap (Module 2, §2.8) means this isn't a permanent bet.
+
+**Multi-agent, quantified:** this design costs roughly 4 extra LLM calls per query just for Supervisor routing, on top of the Researcher's ReAct turns — the real, sayable price of separation of concerns. Justified when roles genuinely need different context/tools (true here); overengineering when "specialist" agents end up needing the same context and tools anyway.
+
+**Scaling to production** would require: concurrency handling in front of a single Ollama instance (queue or replicas), leaning on LangGraph's already-externalized checkpointed state to resume runs on different workers, a semantic cache over repeated questions, rate limiting on the search tool and model server, and observability (LangSmith) moving from optional to mandatory.
+
+**Evaluation & hallucination handling:** a golden question set with known-good reference findings re-run on every prompt/model change; groundedness checks (every report claim should trace to a `Finding.source` — an unsupported claim is a checkable hallucination signal); the Analyst's `confidence` field surfacing uncertainty instead of smoothing it over; periodic human spot-checks for what automated checks miss.
+
+**Failure modes → mitigations** (all designed alongside the failure, not bolted on after): infinite Researcher loop → iteration cap; malformed Ollama tool call → retry/repair; bad Researcher output → schema validation at the hand-off; unsupported report claims → groundedness check; hung node → per-node timeout; lost findings → the `add` reducer (append, never overwrite).
+
+**Security:** prompt injection via untrusted search-result content (mitigated by treating tool output as evidence to evaluate, never as instructions to follow); secrets in a gitignored `.env`, never hardcoded; local-first privacy since nothing leaves the machine by default; and a deliberately narrow tool surface — `web_search` is read-only, no tool in this design writes files, runs code, or takes actions on the user's behalf, which caps the blast radius of any bad tool call to "wrong results," not damage.
+
+Full version with the rapid-fire Q&A grid: see the published artifact (Module 3: Interview Prep).
+
+### Interview Q&A — Module 3 (additional, beyond Modules 1–2)
+
+**Q: What's the single biggest risk in this design?**
+A: Tool-calling reliability from the local model — named explicitly in Module 1 and mitigated with retry/repair logic in Module 2, rather than discovered as a surprise in production.
+
+**Q: What would you change if this had to run for 1,000 users tomorrow?**
+A: Swap to a hosted LLM and Tavily (both one-line changes by design), add a request queue and observability, and turn on the vector-memory cache — the full breakdown is in §3.5 of the artifact.
+
+**Q: What's the benefit over just asking ChatGPT directly?**
+A: Structure and auditability — every claim in the output traces to a specific, scored source, and the process is inspectable step by step instead of being one opaque generation.
+
+**Q: Isn't four agents overkill for "search and summarize"?**
+A: Only if the roles don't actually diverge in context and tools needed — here they do (search vs. judgment vs. writing), and the real cost (~4 extra LLM calls per query for routing) is worth naming rather than hiding.
+
+**Q: What was the hardest design decision?**
+A: Keeping the Supervisor tool-less. It's tempting to let it "help" directly with research, and resisting that is what keeps the failure-isolation benefit from Module 1 real instead of aspirational.
+
+*(Module 4 will append implementation-specific Q&A — "why this library version," "how did you test this," etc. — as real code lands.)*
 
 ---
 

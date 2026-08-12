@@ -6,14 +6,14 @@ This repo is also a learning-in-public build: every module and every implementat
 
 ## Status
 
-**In progress — Modules 1–2 of 4 complete.**
+**In progress — Modules 1–3 of 4 complete.**
 
 | Module | Covers | Status |
 |---|---|---|
 | 01 — Concepts & Foundations | Agents, multi-agent design, LangChain primitives, why LangGraph, reasoning patterns, memory, tool-calling | ✅ Done |
 | 02 — Architecture (HLD & LLD) | Agent responsibilities, sequence flow, state schema, routing logic, search-tool choice, guardrails | ✅ Done |
-| 03 — Interview Prep | Deep trade-off analysis, alternatives, system design | ⏳ Next |
-| 04 — Implementation | Actual code, step by step, tested and demoed | ⏳ Queued |
+| 03 — Interview Prep | Tech-stack trade-offs, local vs. hosted LLM, scaling, evaluation, security, rapid-fire Q&A | ✅ Done |
+| 04 — Implementation | Actual code, step by step, tested and demoed | ⏳ Next |
 
 Nothing under "Getting started" below is runnable yet — this section is written honestly ahead of the code and will be replaced with real, tested commands as Module 04 lands.
 
