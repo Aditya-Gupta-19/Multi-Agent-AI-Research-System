@@ -13,7 +13,7 @@ This repo is also a learning-in-public build: every module and every implementat
 | 01 — Concepts & Foundations | Agents, multi-agent design, LangChain primitives, why LangGraph, reasoning patterns, memory, tool-calling | ✅ Done |
 | 02 — Architecture (HLD & LLD) | Agent responsibilities, sequence flow, state schema, routing logic, search-tool choice, guardrails | ✅ Done |
 | 03 — Interview Prep | Tech-stack trade-offs, local vs. hosted LLM, scaling, evaluation, security, rapid-fire Q&A | ✅ Done |
-| 04 — Implementation | Actual code, step by step, tested and demoed | ⏳ Next |
+| 04 — Implementation | Actual code, step by step, tested and demoed | 🔧 In progress (roadmap locked, Step 1 next) |
 
 Nothing under "Getting started" below is runnable yet — this section is written honestly ahead of the code and will be replaced with real, tested commands as Module 04 lands.
 
@@ -70,24 +70,38 @@ Full HLD/LLD — state schema, routing logic, search-tool trade-off, error handl
 
 ## Repository layout
 
+Locked (Module 04 roadmap) — filled in as each build step lands:
+
 ```
 .
-├── .docs/BUILD_LOG.md   # running build log + interview-prep Q&A (grows with every module)
+├── .docs/BUILD_LOG.md   # running build log + interview-prep Q&A (grows with every module/step)
+├── .env.example
+├── requirements.txt
+├── src/
+│   ├── state.py           # ResearchState, Finding
+│   ├── llm.py              # ChatOllama client
+│   ├── tools.py             # web_search (ddgs)
+│   ├── agents/
+│   │   ├── supervisor.py
+│   │   ├── researcher.py
+│   │   ├── analyst.py
+│   │   └── writer.py
+│   ├── graph.py             # StateGraph wiring
+│   └── main.py              # CLI entrypoint
+├── tests/
 ├── .gitignore
-└── README.md            # you are here
+└── README.md
 ```
-
-Application code (agents, graph definition, tools, tests) is added starting in Module 04, with this section updated to match.
 
 ## Getting started
 
-Not runnable yet. Once Module 04 begins, this section becomes real setup steps — expect roughly:
+Not fully runnable yet — code is landing step by step (tracked in [`.docs/BUILD_LOG.md`](.docs/BUILD_LOG.md)). Once it is:
 
 1. Install [Ollama](https://ollama.com) and pull a tool-calling-capable model (e.g. `ollama pull llama3.1`)
 2. `pip install -r requirements.txt`
-3. Run the graph against a sample research question
+3. `python -m src.main "your research question"`
 
-Track actual progress in [`.docs/BUILD_LOG.md`](.docs/BUILD_LOG.md).
+This section gets its final, verified commands once Step 7 (the CLI entrypoint) lands.
 
 ## Outcome & impact
 

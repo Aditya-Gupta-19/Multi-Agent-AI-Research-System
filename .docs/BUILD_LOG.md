@@ -2,7 +2,7 @@
 
 Internal companion to the public learning guide (published as a Claude Artifact, linked from chat each module). This file is the one that stays with the repo: a plain-words explanation of every decision, a running log of what was actually built and why, and an interview question bank that grows as the project grows. Read `## How this file works` once, then jump to whatever section matches where the project currently is.
 
-Status: **Modules 1–3 complete. Module 4 (Implementation) starting next — roadmap first, then code.**
+Status: **Modules 1–3 complete. Module 4 roadmap locked. Writing Step 1 (scaffolding + state.py) next.**
 
 ---
 
@@ -131,9 +131,46 @@ A: Keeping the Supervisor tool-less. It's tempting to let it "help" directly wit
 
 ---
 
-## Module 04 — Implementation Log
+## Module 04 — Implementation
 
-*No steps yet — this section fills in once we start writing code. Each entry below will follow this shape:*
+### Roadmap (locked before any code)
+
+Repo layout:
+```
+.
+├── .env.example
+├── requirements.txt
+├── src/
+│   ├── state.py           # ResearchState, Finding
+│   ├── llm.py              # ChatOllama client
+│   ├── tools.py             # web_search (ddgs)
+│   ├── agents/
+│   │   ├── supervisor.py    # routing
+│   │   ├── researcher.py    # ReAct loop
+│   │   ├── analyst.py       # scoring
+│   │   └── writer.py        # report draft
+│   ├── graph.py             # StateGraph wiring
+│   └── main.py              # CLI entrypoint
+└── tests/
+```
+
+Dependencies: `langgraph`, `langchain-core`, `langchain-ollama`, `ddgs`, `pydantic`, `python-dotenv`, `pytest`. Requires Python 3.11+ and Ollama installed locally with a tool-calling-capable model pulled.
+
+Build order (bottom-up — data shapes → the one tool → each agent alone → the graph that wires them together → the entrypoint):
+1. Scaffolding + `state.py`
+2. `llm.py` + `tools.py`
+3. Researcher agent
+4. Analyst agent
+5. Writer agent
+6. Supervisor + `graph.py`
+7. `main.py` (first true end-to-end run)
+8. Automated tests
+
+Each numbered step is logged below as it lands — what was built, which APIs/functions, why, how to run it, how to test/demo it, and the interview questions it answers.
+
+### Implementation Log
+
+*Each entry follows this shape:*
 
 ```
 ### Step N — <what was built>
