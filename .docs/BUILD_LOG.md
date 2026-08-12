@@ -2,7 +2,7 @@
 
 Internal companion to the public learning guide (published as a Claude Artifact, linked from chat each module). This file is the one that stays with the repo: a plain-words explanation of every decision, a running log of what was actually built and why, and an interview question bank that grows as the project grows. Read `## How this file works` once, then jump to whatever section matches where the project currently is.
 
-Status: **Modules 1–3 complete. Module 4 roadmap locked. Writing Step 1 (scaffolding + state.py) next.**
+Status: **Modules 1–3 complete. Module 4 Step 1/8 done (scaffolding + state schema, tested). Paused for review before Step 2.**
 
 ---
 
@@ -182,6 +182,27 @@ Each numbered step is logged below as it lands — what was built, which APIs/fu
 - How to test / demo it:
 - Interview questions this step answers:
 ```
+
+### Step 1 — Scaffolding + state schema
+
+- **Date:** 13 Aug 2026
+- **Files added:** `requirements.txt`, `.env.example`, `src/__init__.py`, `src/state.py`, `tests/test_state.py`, `.venv/` (local, gitignored), `.gitignore` updated (`.pytest_cache/`)
+- **What it does (plain words):** Defines the one shared data shape every future agent will read from and write into — `ResearchState` (the question, the findings collected so far, the report draft, routing info, an iteration counter) and `Finding` (one piece of evidence: source, claim, confidence). No agents exist yet; this step is purely the "nouns" the rest of the system will operate on, exactly matching the design frozen in Module 2 §2.3.
+- **Tools/features used, and why:**
+  - Python's `typing.TypedDict` for both schemas — a plain, dependency-free way to get typed dict shapes that LangGraph's `StateGraph` consumes directly in later steps (no need for a heavier `BaseModel` here since there's no validation-at-construction requirement yet).
+  - `typing.Annotated[list[Finding], add]` on `findings` — this *is* the LangGraph reducer pattern discussed in Module 2: it's the piece that will let the Researcher agent append new findings across multiple ReAct turns without erasing earlier ones once the graph is wired up in Step 6.
+  - A project virtual environment (`.venv`) and `requirements.txt` — isolates dependencies from the system Python; verified `pip install -r requirements.txt` completes cleanly with the exact packages named in the Module 4 roadmap.
+- **How to run it:** Nothing user-facing to run yet — this step only defines data shapes, no entrypoint exists until Step 7. Environment is reproducible via:
+  ```
+  python -m venv .venv
+  .venv\Scripts\python.exe -m pip install -r requirements.txt
+  ```
+- **How to test / demo it:** `.venv\Scripts\python.exe -m pytest tests/test_state.py -v` — 3 tests, all passing:
+  - `test_finding_shape` / `test_research_state_shape` — the schemas hold the values they're supposed to.
+  - `test_findings_reducer_appends_rather_than_overwrites` — directly demonstrates the reducer behavior from §2.3: merging two turns' findings with `operator.add` concatenates them (length 2), rather than the second turn replacing the first. This is the actual mechanism, tested in isolation, before any agent or graph code depends on it.
+- **Interview questions this step answers:**
+  - *"Show me the reducer you mentioned in the design — does it actually work?"* — yes, `test_findings_reducer_appends_rather_than_overwrites` proves it with a real assertion, not just a diagram.
+  - *"Why TypedDict instead of a Pydantic model for state?"* — LangGraph's `StateGraph` is built around plain typed dicts for its state channels; Pydantic gets reserved for places that need runtime validation (e.g. structured LLM output in the Analyst, Step 4), not for the state container itself.
 
 ---
 
