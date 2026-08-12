@@ -2,7 +2,7 @@
 
 Internal companion to the public learning guide (published as a Claude Artifact, linked from chat each module). This file is the one that stays with the repo: a plain-words explanation of every decision, a running log of what was actually built and why, and an interview question bank that grows as the project grows. Read `## How this file works` once, then jump to whatever section matches where the project currently is.
 
-Status: **Module 1 complete. Module 2 (Architecture) queued next.**
+Status: **Modules 1–2 complete. Module 3 (Interview Prep) queued next.**
 
 ---
 
@@ -51,9 +51,44 @@ A: Cost (no per-token billing while iterating on a learning project), privacy (n
 
 ---
 
-## Module 02 — Architecture (HLD & LLD)
+## Module 02 — Architecture (HLD & LLD) — recap
 
-*Queued. Will cover: Supervisor/Researcher/Analyst/Writer responsibilities, the end-to-end sequence for one query, the LangGraph state schema, error handling, and where Ollama sits in the stack.*
+**High-level design:** four agents, each with a narrow job. The Supervisor owns *zero* tools — it only reads state and routes; giving it tools would let it quietly start doing research work no other agent's output review would catch. The Researcher is the only agent running a ReAct loop against a real tool (`web_search`). The Analyst is pure reasoning — it scores and deduplicates findings, no tools. The Writer turns scored findings into the final report, with an optional Reflection hand-back to the Supervisor if the draft is thin.
+
+**Sequence for one query:** User → Supervisor → Researcher (ReAct loop, capped) → Supervisor → Analyst → Supervisor → Writer → Supervisor → User. Nine hand-offs, each one a real LLM call — worth remembering when reasoning about latency/cost, since a single research question costs at minimum ~4 LLM calls (Supervisor routes 4 times) plus however many search iterations the Researcher takes.
+
+**Low-level design — the concrete pieces:**
+- **State schema**: a `ResearchState` TypedDict — `question`, `findings` (a list using an `add` reducer so new findings *append* instead of overwriting), `report`, `next_agent`, `iterations`.
+- **Nodes** return only the state keys they changed; LangGraph merges the rest via each field's reducer.
+- **Routing** is a plain function (`route_after_supervisor`) that inspects state and returns a string naming the next node — the concrete mechanism behind "conditional edges" from Module 1.
+- **Search tool**: DuckDuckGo (`ddgs` package) by default — free, no API key, consistent with why Ollama was chosen in the first place. Tavily is the named paid alternative (better structured, pre-ranked results) for when reliability matters more than cost.
+- **Guardrails**: an iteration cap on the Supervisor's loop (forces a final answer instead of looping forever), tool-call retry/repair around Ollama's occasional malformed calls, a per-node timeout, and schema validation at the Researcher→Analyst hand-off so bad data fails loud immediately instead of corrupting the report three steps later.
+- **Observability**: not wired up by default (local-first build), but LangSmith tracing (`LANGCHAIN_TRACING_V2=true`) is the real answer to "how would you debug a bad run" — inspect the trace, don't grep terminal logs.
+- **Ollama's place in the stack**: a local server (`localhost:11434`); `ChatOllama` is just a LangChain client pointed at it. Because every node is written against LangChain's shared `Runnable` interface, swapping to a hosted provider later is a one-line change (`ChatOllama(...)` → `ChatAnthropic(...)`) — nothing downstream of `llm` knows or cares which provider backs it.
+
+Full version with the sequence diagram and code snippets: see the published artifact (Module 2: Architecture — HLD & LLD).
+
+### Interview Q&A — Module 2 architecture
+
+**Q: Walk me through what happens for one user query, end to end.**
+A: The question goes to the Supervisor, which routes to the Researcher. The Researcher runs a capped ReAct loop — search, look at results, decide whether to search again — until it's confident or hits its step cap, then reports findings back to the Supervisor. The Supervisor sends those findings to the Analyst, which scores and deduplicates them with no tools of its own, purely reasoning over the data. The Supervisor sends the scored findings to the Writer, which drafts the report. The Writer hands the draft back to the Supervisor, which either returns it to the user or — if a Reflection pass is enabled and the draft is weak — routes back for another research round.
+
+**Q: Why does only one agent (the Researcher) actually call tools?**
+A: Because tool-calling is where local models are least reliable (see Module 1's Ollama caveat), and it's the one capability that should be isolated and hardened with retry/repair logic rather than duplicated across every agent. It also keeps the Supervisor and Analyst's failure surface small and easy to reason about — if the report is wrong, it's either a research problem or a reasoning problem, never "which of four tool-callers misfired."
+
+**Q: What's a "reducer" in LangGraph state, and why does the findings field need one?**
+A: A reducer tells LangGraph how to combine a node's returned update with existing state instead of blindly overwriting it. `findings` uses `Annotated[list[Finding], add]` so each Researcher turn appends to the list. Without it, a second Researcher turn would replace the first turn's findings outright, since multiple nodes write to that field over the course of one run.
+
+**Q: What stops this system from looping forever?**
+A: A hard iteration cap in the Supervisor's routing function — once `iterations >= MAX_ITERATIONS`, the router forces `"writer"` regardless of whether the Researcher feels done. It's a deliberate quality/termination trade-off: better to answer with imperfect evidence than never answer at all.
+
+**Q: Why DuckDuckGo over Tavily for the search tool, given this is meant to be a serious project?**
+A: Consistency, not cost-cutting for its own sake — Ollama was chosen specifically to remove per-call cost and external dependency from the stack; picking a paid search API right after would undercut that same reasoning. Tavily is explicitly named as the better production option (cleaner, pre-ranked, structured results) — the honest framing is "I optimized for zero marginal cost end-to-end, and this is the one place that trade-off costs some result quality," which is a defensible engineering trade-off, not an oversight.
+
+**Q: How would you debug a bad output in production if you can't just re-run it and watch the terminal?**
+A: LangSmith tracing — every node call, tool call, and state transition for a specific run becomes inspectable after the fact via `LANGCHAIN_TRACING_V2`. That's the real answer; local development for this project skips it by default but the design is compatible with turning it on.
+
+*(Grows further once Module 3 does the full system-design and trade-off grind.)*
 
 ## Module 03 — Interview Prep (full grind)
 

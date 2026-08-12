@@ -6,13 +6,13 @@ This repo is also a learning-in-public build: every module and every implementat
 
 ## Status
 
-**In progress — Module 1 of 4 complete.**
+**In progress — Modules 1–2 of 4 complete.**
 
 | Module | Covers | Status |
 |---|---|---|
 | 01 — Concepts & Foundations | Agents, multi-agent design, LangChain primitives, why LangGraph, reasoning patterns, memory, tool-calling | ✅ Done |
-| 02 — Architecture (HLD & LLD) | Full system design, state schema, sequence flow | ⏳ Next |
-| 03 — Interview Prep | Deep trade-off analysis, alternatives, system design | ⏳ Queued |
+| 02 — Architecture (HLD & LLD) | Agent responsibilities, sequence flow, state schema, routing logic, search-tool choice, guardrails | ✅ Done |
+| 03 — Interview Prep | Deep trade-off analysis, alternatives, system design | ⏳ Next |
 | 04 — Implementation | Actual code, step by step, tested and demoed | ⏳ Queued |
 
 Nothing under "Getting started" below is runnable yet — this section is written honestly ahead of the code and will be replaced with real, tested commands as Module 04 lands.
@@ -49,7 +49,7 @@ flowchart TB
 - **Analyst** — turns raw findings into a typed, structured object (source, claim, confidence) instead of a loose paragraph, so downstream agents get clean data, not text to re-parse.
 - **Writer** — produces the final report from the Analyst's structured findings. An optional **Reflection** pass can send a weak draft back for another research round — off by default, since it roughly doubles the cost of a run.
 
-Full HLD (state schema, error handling, where checkpointing and human-in-the-loop fit) lands in Module 02.
+Full HLD/LLD — state schema, routing logic, search-tool trade-off, error handling and guardrails — is written up in [`.docs/BUILD_LOG.md`](.docs/BUILD_LOG.md#module-02--architecture-hld--lld--recap).
 
 ## Tech stack
 
